@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Student Enrollment Form (Micro Project)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <script src="https://login2explore.com/jpdb/resources/js/0.0.3/jpdb-commons.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Basic styling */
+    body { background-color: #f9f9f9; padding: 20px; }
+    .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; }
+    h2 { margin-bottom: 30px; }
+    .btn { min-width: 90px; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Student Enrollment Form (Micro Project Work)</h2>
+    <form id="stuForm" method="post">
+      <div class="form-group">
+        <label for="rollNo">Roll No (Primary Key):</label>
+        <input type="text" class="form-control" id="rollNo" placeholder="Enter Roll No" onchange="getStu()" />
+      </div>
+      <div class="form-group">
+        <label for="fullName">Full Name:</label>
+        <input type="text" class="form-control" id="fullName" placeholder="Enter Full Name" disabled />
+      </div>
+      <div class="form-group">
+        <label for="class">Class:</label>
+        <input type="text" class="form-control" id="class" placeholder="Enter Class" disabled />
+      </div>
+      <div class="form-group">
+        <label for="birthDate">Birth Date (dd-mm-yyyy):</label>
+        <input type="text" class="form-control" id="birthDate" placeholder="dd-mm-yyyy" disabled />
+      </div>
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" class="form-control" id="email" placeholder="Enter Email" disabled />
+      </div>
+      <div class="form-group">
+        <label for="mobileno">Mobile No:</label>
+        <input type="text" class="form-control" id="mobileno" placeholder="Enter Mobile Number" disabled />
+      </div>
+      <div class="form-group">
+        <label for="address">Address:</label>
+        <textarea class="form-control" id="address" placeholder="Enter Address" rows="2" disabled></textarea>
+      </div>
+      <div class="form-group">
+        <label for="enrollmentDate">Enrollment Date (dd-mm-yyyy):</label>
+        <input type="text" class="form-control" id="enrollmentDate" placeholder="dd-mm-yyyy" disabled />
+      </div>
+
+      <input type="button" class="btn btn-primary" value="Save" id="btnSave" onclick="saveData()" disabled />
+      <input type="button" class="btn btn-warning" value="Update" id="btnUpdate" onclick="updateData()" disabled />
+      <input type="button" class="btn btn-danger" value="Delete" id="btnDelete" onclick="deleteData()" disabled />
+      <input type="button" class="btn btn-default" value="Reset" id="btnReset" onclick="resetForm()" />
+    </form>
+  </div>
+
+  <script>
+    
+const jpdbBaseURL = "http://api.login2explore.com:5577";
+    const jpdbIML = "/api/iml";
+    const jpdbIRL = "/api/irl";
+    const dbName = "Employee";
+    const relationName = "Emp-Rel";
+    const connToken = "90935027|-31949209589979037|90958876";
+
+
+    function resetForm() {
+      $("#rollNo").val("").prop("disabled", false).focus();
+      $("#fullName").val("").prop("disabled", true);
+      $("#class").val("").prop("disabled", true);
+      $("#birthDate").val("").prop("disabled", true);
+      $("#email").val("").prop("disabled", true);
+      $("#mobileno").val("").prop("disabled", true);
+      $("#address").val("").prop("disabled", true);
+      $("#enrollmentDate").val("").prop("disabled", true);
+
+      $("#btnSave").prop("disabled", true);
+      $("#btnUpdate").prop("disabled", true);
+      $("#btnDelete").prop("disabled", true);
+    }
+
+    function validateForm() {
+      if (
+        $("#rollNo").val().trim() === "" ||
+        $("#fullName").val().trim() === "" ||
+        $("#class").val().trim() === "" ||
+        $("#birthDate").val().trim() === "" ||
+        $("#email").val().trim() === "" ||
+        $("#mobileno").val().trim() === "" ||
+        $("#address").val().trim() === "" ||
+        $("#enrollmentDate").val().trim() === ""
+      ) {
+        alert("All fields are required!");
+        return false;
+      }
+      return true;
+    }
+
+    function getFormData() {
+      return JSON.stringify({
+        rollNo: $("#rollNo").val().trim(),
+        fullName: $("#fullName").val().trim(),
+        class: $("#class").val().trim(),
+        birthDate: $("#birthDate").val().trim(),
+        email: $("#email").val().trim(),
+        mobileno: $("#mobileno").val().trim(),
+        address: $("#address").val().trim(),
+        enrollmentDate: $("#enrollmentDate").val().trim()
+      });
+    }
+
+    function fillForm(data) {
+      $("#fullName").val(data.fullName);
+      $("#class").val(data.class);
+      $("#birthDate").val(data.birthDate);
+      $("#email").val(data.email);
+      $("#mobileno").val(data.mobileno);
+      $("#address").val(data.address);
+      $("#enrollmentDate").val(data.enrollmentDate);
+    }
+
+    function enableFormForNew() {
+      $("#rollNo").prop("disabled", false);
+      $("#fullName, #class, #birthDate, #email, #mobileno, #address, #enrollmentDate").prop("disabled", false);
+      $("#btnSave").prop("disabled", false);
+      $("#btnUpdate").prop("disabled", true);
+      $("#btnDelete").prop("disabled", true);
+      $("#fullName").focus();
+    }
+
+    function enableFormForUpdate() {
+      $("#rollNo").prop("disabled", true);
+      $("#fullName, #class, #birthDate, #email, #mobileno, #address, #enrollmentDate").prop("disabled", false);
+      $("#btnSave").prop("disabled", true);
+      $("#btnUpdate").prop("disabled", false);
+      $("#btnDelete").prop("disabled", false);
+      $("#fullName").focus();
+    }
+
+    function getStu() {
+      let rollNo = $("#rollNo").val().trim();
+      if (rollNo === "") {
+        resetForm();
+        return;
+      }
+
+      let getRequest = createGET_BY_KEYRequest(connToken, dbName, relationName, JSON.stringify({ rollNo: rollNo }));
+
+      jQuery.ajaxSetup({ async: false });
+      let resJsonObj = executeCommandAtGivenBaseUrl(getRequest, jpdbBaseURL, jpdbIRL);
+      jQuery.ajaxSetup({ async: true });
+
+      if (resJsonObj.status === 400) {
+        // RollNo NOT found - enable Save & Reset
+        enableFormForNew();
+      } else if (resJsonObj.status === 200) {
+        let data = JSON.parse(resJsonObj.data).record;
+        fillForm(data);
+        localStorage.setItem("recno", JSON.parse(resJsonObj.data).rec_no);
+        enableFormForUpdate();
+      }
+    }
+
+    function saveData() {
+      if (!validateForm()) return;
+
+      let jsonStr = getFormData();
+
+      let putReqStr = createPUTRequest(connToken, jsonStr, dbName, relationName);
+
+      jQuery.ajaxSetup({ async: false });
+      let resultObj = executeCommandAtGivenBaseUrl(putReqStr, jpdbBaseURL, jpdbIML);
+      jQuery.ajaxSetup({ async: true });
+
+      alert("Record saved successfully!");
+      resetForm();
+    }
+
+    function updateData() {
+      if (!validateForm()) return;
+
+      let jsonChg = getFormData();
+
+      let updateRequest = createUPDATERecordRequest(connToken, jsonChg, dbName, relationName, localStorage.getItem("recno"));
+
+      jQuery.ajaxSetup({ async: false });
+      let resJsonObj = executeCommandAtGivenBaseUrl(updateRequest, jpdbBaseURL, jpdbIML);
+      jQuery.ajaxSetup({ async: true });
+
+      alert("Record updated successfully!");
+      resetForm();
+    }
+
+    function deleteData() {
+      let recno = localStorage.getItem("recno");
+      if (!recno) {
+        alert("No record selected to delete.");
+        return;
+      }
+
+      let deleteRequest = createREMOVERecordRequest(connToken, dbName, relationName, recno);
+
+      jQuery.ajaxSetup({ async: false });
+      let resJsonObj = executeCommandAtGivenBaseUrl(deleteRequest, jpdbBaseURL, jpdbIML);
+      jQuery.ajaxSetup({ async: true });
+
+      if (resJsonObj.status === 200) {
+        alert("Record deleted successfully!");
+        resetForm();
+      } else {
+        alert("Error deleting record.");
+      }
+    }
+
+    $(document).ready(function() {
+      resetForm();
+    });
+  </script>
+</body>
+</html>
